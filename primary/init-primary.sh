@@ -2,9 +2,33 @@
 set -e
 
 echo "[Primary] Creating replication user..."
+
+
 # Create replication user and configure replication settings
-psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<-EOSQL
-  CREATE ROLE ${REPL_USER} WITH REPLICATION LOGIN PASSWORD '${REPL_PASSWORD}';
+# psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<-EOSQL
+#   CREATE ROLE ${REPL_USER} WITH REPLICATION LOGIN PASSWORD '${REPL_PASSWORD}';
+# EOSQL
+
+
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+    -- Create replication role
+    DO \$\$
+    BEGIN
+        IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '${REPL_USER}') THEN
+            CREATE ROLE ${REPL_USER} WITH REPLICATION LOGIN PASSWORD '${REPL_PASSWORD}';
+        END IF;
+    END
+    \$\$;
+
+    -- Create replication slot for replica_1
+     SELECT pg_create_physical_replication_slot('postgres_replica_1_slot');
+    
+    -- Create replication slot for replica_2
+     SELECT pg_create_physical_replication_slot('postgres_replica_2_slot');
+
+    -- Grant necessary permissions
+     GRANT CONNECT ON DATABASE $POSTGRES_DB TO ${REPL_USER};
 EOSQL
 
 # Adjust PostgreSQL configuration for replication

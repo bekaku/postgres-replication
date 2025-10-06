@@ -27,6 +27,13 @@ if [ ! -s "$PGDATA/PG_VERSION" ]; then
   # echo "hot_standby = on" >> "$PGDATA/postgresql.conf"
 fi
 
+# Configure replication in postgresql.auto.conf
+cat >> $PGDATA/postgresql.auto.conf << EOSQL
+# primary_conninfo = 'host=$PRIMARY_HOST port=$PRIMARY_PORT user=$REPL_USER password=$REPL_PASSWORD application_name=$(hostname)'
+primary_slot_name = '$(hostname)_slot'
+hot_standby = on
+EOSQL
+
 echo "[Replica] Starting PostgreSQL..."
 # exec docker-entrypoint.sh postgres -c config_file=/etc/postgresql/postgresql.conf
 exec docker-entrypoint.sh postgres \

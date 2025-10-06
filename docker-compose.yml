@@ -2,6 +2,7 @@ services:
   postgres_primary:
     image: postgres:18-alpine
     container_name: postgres_primary
+    hostname: postgres_primary
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -10,8 +11,8 @@ services:
       REPL_USER: ${REPL_USER}
       REPL_PASSWORD: ${REPL_PASSWORD}
     volumes:
-      - pg_primary_data:/var/lib/postgresql/data
-      - ./primary/log:/var/log/postgresql
+      - postgres_primary_data:/var/lib/postgresql/data
+      - ./log/postgres_primary:/var/log/postgresql
       - ./primary/postgresql.conf:/etc/postgresql/postgresql.conf:ro
       - ./primary/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
       - ./primary/init-primary.sh:/docker-entrypoint-initdb.d/init-primary.sh:ro
@@ -28,9 +29,10 @@ services:
     ports:
       - "5432:5432"
 
-  postgres_replica:
+  postgres_replica_1:
     image: postgres:18-alpine
-    container_name: postgres_replica
+    container_name: postgres_replica_1
+    hostname: postgres_replica_1
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -43,8 +45,8 @@ services:
       postgres_primary:
         condition: service_healthy
     volumes:
-      - pg_replica_data:/var/lib/postgresql/data
-      - ./replica/log:/var/log/postgresql
+      - postgres_replica_1_data:/var/lib/postgresql/data
+      - ./log/postgres_replica_1:/var/log/postgresql
       - ./replica/postgresql.conf:/etc/postgresql/postgresql.conf:ro
       - ./replica/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
       - ./replica/init-replica.sh:/init-replica.sh:ro
@@ -59,10 +61,43 @@ services:
     ports:
       - "5433:5432"
 
+  postgres_replica_2:
+    image: postgres:18-alpine
+    container_name: postgres_replica_2
+    hostname: postgres_replica_2
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      REPL_USER: ${REPL_USER}
+      REPL_PASSWORD: ${REPL_PASSWORD}
+      PRIMARY_HOST: ${PRIMARY_HOST}
+      PRIMARY_PORT: ${PRIMARY_PORT}
+    depends_on:
+      postgres_primary:
+        condition: service_healthy
+    volumes:
+      - postgres_replica_2_data:/var/lib/postgresql/data
+      - ./log/postgres_replica_2:/var/log/postgresql
+      - ./replica/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - ./replica/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      - ./replica/init-replica.sh:/init-replica.sh:ro
+    entrypoint: ["/bin/bash", "/init-replica.sh"]
+    networks:
+      - pg_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -h localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5434:5432"
+
 networks:
   pg_net:
     driver: bridge
 
 volumes:
-  pg_primary_data:
-  pg_replica_data:
+  postgres_primary_data:
+  postgres_replica_1_data:
+  postgres_replica_2_data:
