@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 
+echo "[Primary] Creating replication user..."
 # Create replication user and configure replication settings
 psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<-EOSQL
   CREATE ROLE ${REPL_USER} WITH REPLICATION LOGIN PASSWORD '${REPL_PASSWORD}';
@@ -54,6 +55,8 @@ EOSQL
 # EOF
 
 # Allow replica connection
-cat >> ${PGDATA}/pg_hba.conf <<EOF
-host replication ${REPL_USER} 0.0.0.0/0 md5
-EOF
+# cat >> ${PGDATA}/pg_hba.conf <<EOF
+# host replication ${REPL_USER} 0.0.0.0/0 md5
+# EOF
+
+echo "[Primary] Replication setup complete."

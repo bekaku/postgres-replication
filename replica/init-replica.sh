@@ -28,4 +28,7 @@ if [ ! -s "$PGDATA/PG_VERSION" ]; then
 fi
 
 echo "[Replica] Starting PostgreSQL..."
-exec docker-entrypoint.sh postgres -c config_file=/etc/postgresql/postgresql.conf
+# exec docker-entrypoint.sh postgres -c config_file=/etc/postgresql/postgresql.conf
+exec docker-entrypoint.sh postgres \
+     -c config_file=/etc/postgresql/postgresql.conf \
+     -c hba_file=/etc/postgresql/pg_hba.conf
