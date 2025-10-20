@@ -44,8 +44,9 @@ This will:
 
 ### 3. Verify replication
 ```bash
-docker logs -f pg_primary
-docker logs -f pg_replica
+docker logs -f postgres_primary
+docker logs -f postgres_replica_1
+docker logs -f postgres_replica_...
 ```
 - On the replica, you should see:
 ```bash
@@ -56,7 +57,7 @@ docker logs -f pg_replica
 
 - Connect to the primary:
 ```bash
-docker exec -it pg_primary psql -U postgres -d appdb
+docker exec -it postgres_primary psql -U postgres -d appdb
 ```
 - Check replication status on the primary:
 ```bash
@@ -69,14 +70,15 @@ SELECT * FROM pg_stat_replication;
 1. Edit the respective `postgresql.conf` file.
 2. Restart the container to apply settings:
 ```bash
-docker-compose restart primary
-docker-compose restart replica
+docker-compose restart postgres_primary
+docker-compose restart postgres_replica_1
+docker-compose restart postgres_replica_...
 ```
 
 - Some settings (like logging or autovacuum) can be reloaded without a full restart:
 ```bash
-docker exec -it pg_primary pg_ctl reload
-docker exec -it pg_replica pg_ctl reload
+docker exec -it postgres_primary pg_ctl reload
+docker exec -it postgres_replica_1 pg_ctl reload
 ```
 
 ### 5. Logs
@@ -85,8 +87,8 @@ docker exec -it pg_replica pg_ctl reload
 
 ```yaml
 volumes:
-  - pg_primary_logs:/var/log/postgresql
-  - pg_replica_logs:/var/log/postgresql
+  - ./log/postgres_primary:/var/log/postgresql
+  - ./log/postgres_replica_1:/var/log/postgresql
 ```
 ### 6. Resetting the setup
 To clean the environment and start fresh:
